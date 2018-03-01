@@ -1,0 +1,25 @@
+@import './colors';
+
+body {
+    background: $colorBeige;
+}
+.error-page {
+    h3 {
+        color: $primaryColor;
+        font-size: 5rem;
+        font-weight: 700;
+        margin: 0;
+    }
+    .message {
+        font-size: 2rem; 
+        font-weight: 700;
+    }
+    .error-card {
+        position: relative;
+        .error-description{
+            max-height: 70vh;
+            overflow-y: auto;
+            word-wrap: break-word;
+        }
+    }
+}

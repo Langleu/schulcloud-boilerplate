@@ -1,0 +1,90 @@
+/*
+ * One Controller per layout view
+ */
+
+const express = require('express');
+const router = express.Router();
+const api = require('../api');
+const authHelper = require('../helpers/authentication');
+
+
+const getSelectOptions = (req, service, query) => {
+    return api(req).get('/' + service, {
+        qs: query
+    }).then(data => {
+        return data.data;
+    });
+};
+
+
+// Login
+
+router.post('/login/', function (req, res, next) {
+    const username = req.body.username; // TODO: sanitize
+    const password = req.body.password; // TODO: sanitize
+    const systemId = req.body.systemId;
+
+    return api(req).get('/accounts/', {qs: {username: username}})
+        .then(account => {
+            if (!(account[0] || {}).activated && (account[0] || {}).activated !== undefined) { // undefined for currently existing users
+                res.locals.notification = {
+                    'type': 'danger',
+                    'message': 'Account noch nicht aktiviert.'
+                };
+                next();
+            } else {
+                const login = (data) => {
+                    return api(req).post('/authentication', {json: data}).then(data => {
+                        res.cookie('jwt', data.accessToken, {expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)});
+                        res.redirect('/login/success/');
+                    }).catch(_ => {
+                        res.locals.notification = {
+                            'type': 'danger',
+                            'message': 'Login fehlgeschlagen.'
+                        };
+                        next();
+                    });
+                };
+
+                if (systemId) {
+                    return api(req).get('/systems/' + req.body.systemId).then(system => {
+                        return login({strategy: system.type, username, password, systemId});
+                    });
+                } else {
+                    return login({strategy: 'local', username, password});
+                }
+            }
+        });
+});
+
+router.all('/', function (req, res, next) {
+    authHelper.isAuthenticated(req).then(isAuthenticated => {
+        if (isAuthenticated) {
+            return res.redirect('/login/success/');
+        } else {
+                return res.render('authentication/login', {
+                    inline: true,
+                    systems: []
+                });
+        }
+    });
+});
+
+// so we can do proper redirecting and stuff :)
+router.get('/login/success', authHelper.authChecker, function (req, res, next) {
+    if (res.locals.currentUser) {
+        res.redirect('/dashboard/');
+    }
+});
+
+router.get('/logout/', function (req, res, next) {
+    api(req).del('/authentication')
+        .then(_ => {
+            res.clearCookie('jwt');
+            return res.redirect('/');
+        }).catch(_ => {
+        return res.redirect('/');
+    });
+});
+
+module.exports = router;

@@ -1,0 +1,28 @@
+{{#extend "lib/loggedin"}}
+
+    {{#content "styles" mode="append"}}
+        <link rel="stylesheet" href="/styles/dashboard/dashboard.css"/>
+    {{/content}}
+
+    {{#content "scripts" mode="append"}}
+
+    {{/content}}
+
+    {{#content "page"}}
+        <section class="section-timetable">
+
+        </section>
+
+
+        {{#ifneq this.currentRole "Schüler"}}
+        {{#ifneq ../this.currentRole "Demo"}}
+            {{#embed "lib/components/modal" class="poll-modal"}}
+            {{#content "body"}}
+                {{> "lib/forms/form-poll"}}
+            {{/content}}
+        {{/embed}}
+        {{/ifneq}}
+        {{/ifneq}}
+
+    {{/content}}
+{{/extend}}
